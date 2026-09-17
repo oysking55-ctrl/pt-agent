@@ -1,0 +1,95 @@
+{
+  "slug": "01-visual-studio-agent",
+  "topic": "Visual Studio를 이용한 나만의 Agent 만들기",
+  "subtitle": "w/ Claude Code",
+  "author": "",
+  "sections": [
+    {
+      "title": "Visual Studio란 무엇인가?",
+      "bullets": [
+        "Microsoft가 만든 통합 개발 환경(IDE) — 코드 작성, 디버깅, 테스트, 배포를 한 곳에서 처리",
+        "C#, C++, Python, JavaScript/TypeScript 등 다양한 언어와 프레임워크 지원",
+        "Community(무료) / Professional / Enterprise 에디션 제공",
+        "Visual Studio 2026: '세계 최초의 AI 네이티브 IDE'를 표방하며 Copilot이 핵심 기능으로 완전히 통합"
+      ],
+      "notes": "출처: Microsoft Learn, Visual Studio Magazine (2026)"
+    },
+    {
+      "title": "Visual Studio 기능 및 설명",
+      "bullets": [
+        "지능형 코드 편집 — IntelliSense 자동완성, 리팩터링, 실시간 오류 검사",
+        "강력한 디버거 — 중단점, 조건부 디버깅, 실시간 변수 확인, 핫 리로드",
+        "Git 통합 — 커밋 · 브랜치 · Pull Request를 IDE 안에서 바로 처리",
+        "테스트 러너 & 코드 커버리지 — 2026 버전부터 Community 에디션에서도 기본 제공",
+        "AI 기반 기능 — Copilot 채팅, 코드 생성/설명, 성능 프로파일링 어시스턴트",
+        "새로운 Fluent UI — 11종 테마와 사용자 지정 색상 토큰으로 가독성 향상",
+        "확장(Extension) 마켓플레이스로 기능을 자유롭게 추가"
+      ]
+    },
+    {
+      "title": "JSON이란 무엇인가?",
+      "bullets": [
+        "JavaScript Object Notation의 약자 — 사람이 읽고 쓰기 쉬운 경량 데이터 교환 포맷",
+        "key-value 쌍과 배열([ ])로 이루어진 트리 구조",
+        "프로그래밍 언어에 독립적 — 대부분의 언어가 파서를 기본 제공",
+        "웹 API 응답, 설정 파일(package.json 등), 앱 간 데이터 교환에 널리 사용",
+        "Visual Studio · Claude Code에서도 MCP 서버 설정, launch.json, settings.json 등에 JSON을 사용"
+      ],
+      "code": "{\n  \"name\": \"PT Agent\",\n  \"sections\": [\"intro\", \"demo\"]\n}"
+    },
+    {
+      "title": "Claude Code란 무엇인가?",
+      "bullets": [
+        "Anthropic이 만든 터미널/에디터 기반 AI 코딩 에이전트(CLI)",
+        "전체 코드베이스를 이해하고 여러 파일을 한 번에 읽고 수정",
+        "자연어 지시만으로 기능 구현, 버그 수정, 테스트 작성, git 커밋/PR까지 자동 수행",
+        "CLAUDE.md · Skills · Subagents · Slash Commands · Hooks · MCP 서버로 자유롭게 확장",
+        "Plan Mode — 실행 전에 계획을 먼저 검토하고 수정 가능",
+        "VS Code, Visual Studio, JetBrains 등 주요 IDE와 통합 지원"
+      ],
+      "notes": "출처: Anthropic Claude Code Docs, GitHub anthropics/claude-code"
+    },
+    {
+      "title": "Visual Studio와 Claude Code를 이용하는 방법",
+      "bullets": [
+        "방법 1 — 확장 설치 후 사이드바(Spark 아이콘)에서 Claude Code 패널 열기",
+        "방법 2 — 통합 터미널에서 claude 명령 실행 → IDE 환경을 자동 감지해 연동",
+        "파일/코드 범위를 @멘션으로 지정해 정확한 위치를 수정 요청",
+        "변경 사항은 에디터 Diff 뷰로 확인한 뒤 승인 또는 수정",
+        "복잡한 작업은 Plan Mode로 계획을 먼저 세우고 승인 후 실행",
+        "CLAUDE.md에 프로젝트 규칙을 적어두면 매번 같은 설명을 반복할 필요 없음"
+      ]
+    },
+    {
+      "title": "GitHub는 무엇이며 주로 이용하는 무료 API 및 Tool",
+      "bullets": [
+        "GitHub — Git 기반 코드 저장 · 협업 플랫폼 (이슈, PR, 코드 리뷰, 프로젝트 관리)",
+        "GitHub Pages — 정적 웹사이트를 무료로 호스팅(Public repo 기준), *.github.io 도메인 기본 제공",
+        "GitHub Actions — push/PR 등 이벤트에 반응해 빌드 · 테스트 · 배포를 자동화하는 무료 CI/CD",
+        "GitHub REST / GraphQL API — 저장소, 이슈, PR 등을 코드로 자동 제어",
+        "GitHub CLI(gh) — 터미널에서 저장소 생성, PR, 이슈 등을 명령어로 처리",
+        "그 외 커뮤니티가 정리한 무료 공개 API 모음(Free-APIs 등)도 함께 활용 가능"
+      ]
+    },
+    {
+      "title": "실습: 매일 영어회화를 나만의 웹페이지로 만들기",
+      "bullets": [
+        "목표 — 매일 새로운 영어회화 문장을 자동 생성 → 웹페이지로 게시 → 카카오톡으로 알림",
+        "① Claude Code + GitHub Actions 스케줄(cron)이 매일 영어회화 문장 · 해석 · 예문을 자동 생성",
+        "② 생성된 콘텐츠를 HTML로 저장하고 GitHub Pages에 자동 배포",
+        "③ 카카오 디벨로퍼스 REST API의 '나에게 보내기'로 오늘의 웹페이지 링크를 카카오톡으로 전송",
+        "필요한 준비물 — GitHub 저장소 + Actions, 카카오 디벨로퍼스 앱 등록, REST API 키 · Access Token",
+        "확장 아이디어 — 난이도 선택, 발음 오디오 추가, 가족/친구 단체 채팅방으로 공유"
+      ],
+      "notes": "출처: Kakao Developers REST API 문서(카카오톡 메시지)"
+    }
+  ],
+  "closing": {
+    "title": "정리",
+    "bullets": [
+      "Visual Studio는 AI 네이티브 IDE로 진화 중이며, Claude Code와 결합하면 강력한 개발 파트너가 됨",
+      "JSON과 GitHub의 무료 도구(Pages, Actions)를 조합하면 별도 서버 없이도 자동화 서비스를 만들 수 있음",
+      "오늘 실습한 '매일 영어회화 웹페이지 + 카카오톡 알림'처럼, 나만의 아이디어를 Agent로 직접 만들어보세요"
+    ]
+  }
+}

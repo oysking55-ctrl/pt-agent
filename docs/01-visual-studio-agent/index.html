@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Visual Studio를 이용한 나만의 Agent 만들기</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/reveal.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/theme/night.css" id="theme">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/plugin/highlight/monokai.css">
+<style>
+  :root { --accent: #4f8cff; }
+  .reveal h1, .reveal h2 { color: var(--accent); }
+  .reveal .slides section { text-align: left; }
+  .reveal ul { display: block; }
+  .reveal .title-slide { text-align: center; }
+  .reveal .title-slide h1 { font-size: 2.2em; }
+  .reveal .title-slide h3 { color: #ccd6f6; font-weight: 400; }
+  .topbar {
+    position: fixed; top: 0; left: 0; right: 0; padding: 10px 20px;
+    display: flex; justify-content: flex-end; gap: 10px; z-index: 100;
+  }
+  .topbar a {
+    background: var(--accent); color: #fff; text-decoration: none;
+    padding: 8px 16px; border-radius: 6px; font-size: 14px; font-family: sans-serif;
+  }
+  .topbar a:hover { opacity: 0.85; }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <a href="slides.pptx" download>PPT 다운로드</a>
+  <a href="../">← 목록으로</a>
+</div>
+<div class="reveal">
+  <div class="slides">
+    <section class="title-slide">
+      <h1>Visual Studio를 이용한 나만의 Agent 만들기</h1>
+      <h3>w/ Claude Code</h3>
+    </section>
+    <section>
+      <h2>Visual Studio란 무엇인가?</h2>
+      <ul>
+        <li>Microsoft가 만든 통합 개발 환경(IDE) — 코드 작성, 디버깅, 테스트, 배포를 한 곳에서 처리</li>
+        <li>C#, C++, Python, JavaScript/TypeScript 등 다양한 언어와 프레임워크 지원</li>
+        <li>Community(무료) / Professional / Enterprise 에디션 제공</li>
+        <li>Visual Studio 2026: '세계 최초의 AI 네이티브 IDE'를 표방하며 Copilot이 핵심 기능으로 완전히 통합</li>
+      </ul>
+      <aside class="notes">출처: Microsoft Learn, Visual Studio Magazine (2026)</aside>
+    </section>
+    <section>
+      <h2>Visual Studio 기능 및 설명</h2>
+      <ul>
+        <li>지능형 코드 편집 — IntelliSense 자동완성, 리팩터링, 실시간 오류 검사</li>
+        <li>강력한 디버거 — 중단점, 조건부 디버깅, 실시간 변수 확인, 핫 리로드</li>
+        <li>Git 통합 — 커밋 · 브랜치 · Pull Request를 IDE 안에서 바로 처리</li>
+        <li>테스트 러너 &amp; 코드 커버리지 — 2026 버전부터 Community 에디션에서도 기본 제공</li>
+        <li>AI 기반 기능 — Copilot 채팅, 코드 생성/설명, 성능 프로파일링 어시스턴트</li>
+        <li>새로운 Fluent UI — 11종 테마와 사용자 지정 색상 토큰으로 가독성 향상</li>
+        <li>확장(Extension) 마켓플레이스로 기능을 자유롭게 추가</li>
+      </ul>
+    </section>
+    <section>
+      <h2>JSON이란 무엇인가?</h2>
+      <div style="display:flex; gap:2em; align-items:flex-start;">
+        <ul style="flex:1.3">
+        <li>JavaScript Object Notation의 약자 — 사람이 읽고 쓰기 쉬운 경량 데이터 교환 포맷</li>
+        <li>key-value 쌍과 배열([ ])로 이루어진 트리 구조</li>
+        <li>프로그래밍 언어에 독립적 — 대부분의 언어가 파서를 기본 제공</li>
+        <li>웹 API 응답, 설정 파일(package.json 등), 앱 간 데이터 교환에 널리 사용</li>
+        <li>Visual Studio · Claude Code에서도 MCP 서버 설정, launch.json, settings.json 등에 JSON을 사용</li>
+        </ul>
+        <pre style="flex:1"><code class="language-json">{
+  "name": "PT Agent",
+  "sections": ["intro", "demo"]
+}</code></pre>
+      </div>
+    </section>
+    <section>
+      <h2>Claude Code란 무엇인가?</h2>
+      <ul>
+        <li>Anthropic이 만든 터미널/에디터 기반 AI 코딩 에이전트(CLI)</li>
+        <li>전체 코드베이스를 이해하고 여러 파일을 한 번에 읽고 수정</li>
+        <li>자연어 지시만으로 기능 구현, 버그 수정, 테스트 작성, git 커밋/PR까지 자동 수행</li>
+        <li>CLAUDE.md · Skills · Subagents · Slash Commands · Hooks · MCP 서버로 자유롭게 확장</li>
+        <li>Plan Mode — 실행 전에 계획을 먼저 검토하고 수정 가능</li>
+        <li>VS Code, Visual Studio, JetBrains 등 주요 IDE와 통합 지원</li>
+      </ul>
+      <aside class="notes">출처: Anthropic Claude Code Docs, GitHub anthropics/claude-code</aside>
+    </section>
+    <section>
+      <h2>Visual Studio와 Claude Code를 이용하는 방법</h2>
+      <ul>
+        <li>방법 1 — 확장 설치 후 사이드바(Spark 아이콘)에서 Claude Code 패널 열기</li>
+        <li>방법 2 — 통합 터미널에서 claude 명령 실행 → IDE 환경을 자동 감지해 연동</li>
+        <li>파일/코드 범위를 @멘션으로 지정해 정확한 위치를 수정 요청</li>
+        <li>변경 사항은 에디터 Diff 뷰로 확인한 뒤 승인 또는 수정</li>
+        <li>복잡한 작업은 Plan Mode로 계획을 먼저 세우고 승인 후 실행</li>
+        <li>CLAUDE.md에 프로젝트 규칙을 적어두면 매번 같은 설명을 반복할 필요 없음</li>
+      </ul>
+    </section>
+    <section>
+      <h2>GitHub는 무엇이며 주로 이용하는 무료 API 및 Tool</h2>
+      <ul>
+        <li>GitHub — Git 기반 코드 저장 · 협업 플랫폼 (이슈, PR, 코드 리뷰, 프로젝트 관리)</li>
+        <li>GitHub Pages — 정적 웹사이트를 무료로 호스팅(Public repo 기준), *.github.io 도메인 기본 제공</li>
+        <li>GitHub Actions — push/PR 등 이벤트에 반응해 빌드 · 테스트 · 배포를 자동화하는 무료 CI/CD</li>
+        <li>GitHub REST / GraphQL API — 저장소, 이슈, PR 등을 코드로 자동 제어</li>
+        <li>GitHub CLI(gh) — 터미널에서 저장소 생성, PR, 이슈 등을 명령어로 처리</li>
+        <li>그 외 커뮤니티가 정리한 무료 공개 API 모음(Free-APIs 등)도 함께 활용 가능</li>
+      </ul>
+    </section>
+    <section>
+      <h2>실습: 매일 영어회화를 나만의 웹페이지로 만들기</h2>
+      <ul>
+        <li>목표 — 매일 새로운 영어회화 문장을 자동 생성 → 웹페이지로 게시 → 카카오톡으로 알림</li>
+        <li>① Claude Code + GitHub Actions 스케줄(cron)이 매일 영어회화 문장 · 해석 · 예문을 자동 생성</li>
+        <li>② 생성된 콘텐츠를 HTML로 저장하고 GitHub Pages에 자동 배포</li>
+        <li>③ 카카오 디벨로퍼스 REST API의 '나에게 보내기'로 오늘의 웹페이지 링크를 카카오톡으로 전송</li>
+        <li>필요한 준비물 — GitHub 저장소 + Actions, 카카오 디벨로퍼스 앱 등록, REST API 키 · Access Token</li>
+        <li>확장 아이디어 — 난이도 선택, 발음 오디오 추가, 가족/친구 단체 채팅방으로 공유</li>
+      </ul>
+      <aside class="notes">출처: Kakao Developers REST API 문서(카카오톡 메시지)</aside>
+    </section>
+    <section>
+      <h2>정리</h2>
+      <ul>
+        <li>Visual Studio는 AI 네이티브 IDE로 진화 중이며, Claude Code와 결합하면 강력한 개발 파트너가 됨</li>
+        <li>JSON과 GitHub의 무료 도구(Pages, Actions)를 조합하면 별도 서버 없이도 자동화 서비스를 만들 수 있음</li>
+        <li>오늘 실습한 '매일 영어회화 웹페이지 + 카카오톡 알림'처럼, 나만의 아이디어를 Agent로 직접 만들어보세요</li>
+      </ul>
+    </section>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/reveal.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/plugin/notes/notes.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/plugin/highlight/highlight.js"></script>
+<script>
+  Reveal.initialize({
+    hash: true,
+    slideNumber: true,
+    transition: 'slide',
+    plugins: [ RevealNotes, RevealHighlight ]
+  });
+</script>
+</body>
+</html>
