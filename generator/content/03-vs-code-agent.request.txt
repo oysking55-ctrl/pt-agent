@@ -1,0 +1,30 @@
+PT Agent 요청 — generator/content/03-vs-code-agent.json
+
+주제: VS Code를 이용한  Agent만들기 개념 정리
+부제: w/ Claude Code
+발표 대상: 대학생/일반인
+
+발표 시나리오/컨셉:
+범용 AI(chat gpt, gemini, claude, 젠스파크 등)를 이용하다가 vs code(w/ claude code)를 이용하여 'daily-english', 'ict공고검색', '회의록 정리' 등이 agent를 만들어 업무 효율을 높이고 있는데, 아직도 vs code가 무엇인지, python은 무엇이고 json은 무엇이고 git-hub는 어떤 니즈에 사용하는지 모르는 상태에서 claude code가 하라는대로 만들었어. 그래서 개념을 정립할 수 있도록 pt를 만들어줘
+
+발표 항목이 아직 없어. 위 시나리오/컨셉을 바탕으로 이 발표에 어울리는 발표 항목(목차)을 새로 제안해줘. 제안한 목차를 먼저 나에게 보여주고 확인/수정을 받은 다음 다음 단계로 진행해줘.
+
+그다음 (항목이 확정되면) 각 항목을 웹 검색으로 리서치해서 generator/content/03-vs-code-agent.json 의
+sections[].bullets (항목별 핵심 내용 4~7개)와 closing.bullets 를 채워줘.
+항목이 새로 추가/변경됐다면 sections 배열 자체를 새 목차에 맞게 다시 써줘.
+필요하면 sections[].code 필드에 짧은 예시 코드/설정을 추가해도 좋아.
+
+**아주 중요 — 대상 맞춤:**
+모든 문장의 단어 선택과 설명 수준을 "대학생/일반인"에 맞춰줘.
+예를 들어 대상이 초/중/고 학생이면 전문 용어를 최소화하고 쉬운 말과 비유로 풀어서 설명하고,
+실무자/전문가면 전문 용어를 그대로 쓰고 더 깊이 있는 내용을 다뤄줘.
+
+**용어 설명 (필수):**
+전문 용어나 어려운 단어를 한 개라도 쓴 슬라이드에는 sections[].terms 배열에
+{"term": "용어", "def": "쉬운 설명"} 형태로 추가해줘. terms 안의 설명도 "대학생/일반인" 눈높이로 써줘.
+용어가 없는 슬라이드는 terms를 빈 배열로 둬도 돼.
+
+내용을 다 채운 뒤에는 아래 명령으로 PPT와 웹 슬라이드를 빌드해줘:
+    python generator/build_deck.py generator/content/03-vs-code-agent.json
+
+빌드 후 docs/03-vs-code-agent/index.html 을 열어 슬라이드가 한 화면에 잘 들어가는지, 용어 설명이 각 슬라이드 아래쪽에 잘 보이는지 확인해줘.

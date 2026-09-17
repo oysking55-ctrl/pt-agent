@@ -18,7 +18,7 @@ from pathlib import Path
 from pptx import Presentation
 from pptx.util import Inches, Pt, Emu
 from pptx.dml.color import RGBColor
-from pptx.enum.text import PP_ALIGN, MSO_ANCHOR
+from pptx.enum.text import PP_ALIGN, MSO_ANCHOR, MSO_AUTO_SIZE
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DOCS_DIR = REPO_ROOT / "docs"
@@ -53,7 +53,7 @@ def add_title_slide(prs: Presentation, topic: str, subtitle: str, audience: str 
     tf.word_wrap = True
     p = tf.paragraphs[0]
     p.text = topic
-    p.font.size = Pt(40)
+    p.font.size = Pt(44)
     p.font.bold = True
     p.font.color.rgb = WHITE
 
@@ -61,14 +61,14 @@ def add_title_slide(prs: Presentation, topic: str, subtitle: str, audience: str 
     tf2 = box2.text_frame
     p2 = tf2.paragraphs[0]
     p2.text = subtitle
-    p2.font.size = Pt(22)
+    p2.font.size = Pt(24)
     p2.font.color.rgb = ACCENT
 
     if audience:
         box3 = slide.shapes.add_textbox(Inches(0.8), Inches(4.9), Inches(11.7), Inches(0.6))
         p3 = box3.text_frame.paragraphs[0]
         p3.text = f"대상: {audience}"
-        p3.font.size = Pt(16)
+        p3.font.size = Pt(18)
         p3.font.color.rgb = RGBColor(0xCC, 0xD6, 0xF6)
 
     rule = slide.shapes.add_shape(1, Inches(0.85), Inches(2.15), Inches(1.4), Pt(4))
@@ -93,29 +93,71 @@ def add_terms_footer(slide, terms):
 
     label = p.add_run()
     label.text = "용어 설명   "
-    label.font.size = Pt(11)
+    label.font.size = Pt(12)
     label.font.bold = True
     label.font.color.rgb = ACCENT
 
     for i, term in enumerate(terms):
         sep = p.add_run()
         sep.text = "" if i == 0 else "     ·     "
-        sep.font.size = Pt(11)
+        sep.font.size = Pt(12)
         sep.font.color.rgb = SLATE
 
         name = p.add_run()
         name.text = f"{term['term']} "
-        name.font.size = Pt(11)
+        name.font.size = Pt(12)
         name.font.bold = True
         name.font.color.rgb = NAVY
 
         definition = p.add_run()
         definition.text = term["def"]
-        definition.font.size = Pt(11)
+        definition.font.size = Pt(12)
         definition.font.color.rgb = SLATE
 
 
-def add_content_slide(prs: Presentation, index: int, total: int, title: str, bullets, code: str = None, terms=None):
+def add_flow_diagram(slide, steps, top):
+    """Draw a horizontal box-and-arrow flow diagram; returns the bottom edge (Emu)."""
+    n = len(steps)
+    total_w_in = 11.9
+    arrow_w_in = 0.45
+    height_in = 0.9
+    box_w_in = (total_w_in - arrow_w_in * (n - 1)) / n
+    left_in = 0.7
+
+    for i, step in enumerate(steps):
+        shape = slide.shapes.add_shape(5, Inches(left_in), top, Inches(box_w_in), Inches(height_in))
+        shape.fill.solid()
+        shape.fill.fore_color.rgb = ACCENT
+        shape.line.fill.background()
+        tf = shape.text_frame
+        tf.word_wrap = True
+        tf.vertical_anchor = MSO_ANCHOR.MIDDLE
+        tf.margin_left = Pt(4)
+        tf.margin_right = Pt(4)
+        p = tf.paragraphs[0]
+        p.text = step
+        p.alignment = PP_ALIGN.CENTER
+        p.font.size = Pt(14)
+        p.font.bold = True
+        p.font.color.rgb = WHITE
+        left_in += box_w_in
+
+        if i < n - 1:
+            arrow_box = slide.shapes.add_textbox(Inches(left_in), top, Inches(arrow_w_in), Inches(height_in))
+            atf = arrow_box.text_frame
+            atf.vertical_anchor = MSO_ANCHOR.MIDDLE
+            ap = atf.paragraphs[0]
+            ap.text = "→"
+            ap.alignment = PP_ALIGN.CENTER
+            ap.font.size = Pt(20)
+            ap.font.bold = True
+            ap.font.color.rgb = NAVY
+            left_in += arrow_w_in
+
+    return top + Inches(height_in)
+
+
+def add_content_slide(prs: Presentation, index: int, total: int, title: str, bullets, code: str = None, terms=None, diagram=None):
     slide = prs.slides.add_slide(prs.slide_layouts[6])
     set_background(slide, WHITE)
 
@@ -130,24 +172,32 @@ def add_content_slide(prs: Presentation, index: int, total: int, title: str, bul
     tf.word_wrap = True
     p = tf.paragraphs[0]
     p.text = title
-    p.font.size = Pt(30)
+    p.font.size = Pt(32)
     p.font.bold = True
     p.font.color.rgb = NAVY
 
     body_top = Inches(1.55)
     body_height = Inches(4.9) if terms else Inches(5.9)
+
+    bullets_top = body_top
+    if diagram:
+        diagram_bottom = add_flow_diagram(slide, diagram, body_top)
+        bullets_top = diagram_bottom + Inches(0.3)
+        body_height = body_height - (bullets_top - body_top)
+
     if code:
         body_width = Inches(7.0)
     else:
         body_width = Inches(11.9)
 
-    body_box = slide.shapes.add_textbox(Inches(0.7), body_top, body_width, body_height)
+    body_box = slide.shapes.add_textbox(Inches(0.7), bullets_top, body_width, body_height)
     tf = body_box.text_frame
     tf.word_wrap = True
+    tf.auto_size = MSO_AUTO_SIZE.TEXT_TO_FIT_SHAPE
     for i, bullet in enumerate(bullets):
         p = tf.paragraphs[0] if i == 0 else tf.add_paragraph()
         p.text = f"•  {bullet}"
-        p.font.size = Pt(17)
+        p.font.size = Pt(19)
         p.font.color.rgb = SLATE
         p.space_after = Pt(12)
 
@@ -162,7 +212,7 @@ def add_content_slide(prs: Presentation, index: int, total: int, title: str, bul
         for i, line in enumerate(code.split("\n")):
             p = tf.paragraphs[0] if i == 0 else tf.add_paragraph()
             p.text = line
-            p.font.size = Pt(13)
+            p.font.size = Pt(14)
             p.font.name = "Consolas"
             p.font.color.rgb = RGBColor(0x9C, 0xD8, 0xFF)
 
@@ -187,7 +237,7 @@ def build_pptx(data: dict, out_path: Path):
     sections = data["sections"]
     total = len(sections) + 2  # title + closing
     for i, sec in enumerate(sections, start=2):
-        add_content_slide(prs, i, total, sec["title"], sec["bullets"], sec.get("code"), sec.get("terms"))
+        add_content_slide(prs, i, total, sec["title"], sec["bullets"], sec.get("code"), sec.get("terms"), sec.get("diagram"))
 
     closing = data.get("closing")
     if closing:
@@ -215,7 +265,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 <style>
   :root {{
     --accent: #4f8cff;
-    --r-main-font-size: 30px;
+    --r-main-font-size: 34px;
     --r-heading1-size: 2em;
     --r-heading2-size: 1.35em;
     --r-block-margin: 14px;
@@ -231,18 +281,25 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   }}
   .reveal .slides section > h2 {{ margin-top: 0; margin-bottom: 0.5em; flex: 0 0 auto; }}
   .reveal .slide-body {{ flex: 1 1 auto; min-height: 0; overflow-y: auto; }}
-  .reveal ul {{ display: block; font-size: 0.68em; line-height: 1.35; margin: 0; padding-left: 0.9em; }}
-  .reveal ul.dense {{ font-size: 0.58em; line-height: 1.28; }}
-  .reveal ul.sparse {{ font-size: 0.8em; line-height: 1.45; }}
+  .reveal ul {{ display: block; font-size: 0.76em; line-height: 1.4; margin: 0; padding-left: 0.9em; }}
+  .reveal ul.dense {{ font-size: 0.64em; line-height: 1.3; }}
+  .reveal ul.sparse {{ font-size: 0.88em; line-height: 1.5; }}
   .reveal li {{ margin-bottom: 0.5em; }}
-  .reveal section pre {{ font-size: 0.42em; width: 100%; box-shadow: none; }}
+  .reveal section pre {{ font-size: 0.46em; width: 100%; box-shadow: none; }}
+  .reveal .flow {{ display: flex; align-items: stretch; gap: 0; margin: 0 0 20px; flex-wrap: wrap; flex: 0 0 auto; }}
+  .reveal .flow-step {{
+    flex: 1 1 0; min-width: 110px; display: flex; align-items: center; justify-content: center;
+    background: var(--accent); color: #0b1020; font-weight: bold; font-size: 0.56em; line-height: 1.3;
+    text-align: center; border-radius: 10px; padding: 14px 10px;
+  }}
+  .reveal .flow-arrow {{ flex: 0 0 auto; display: flex; align-items: center; padding: 0 10px; font-size: 0.75em; color: var(--accent); }}
   .reveal section aside.notes {{ display: none; }}
   .reveal .term-footer {{
     flex: 0 0 auto;
     margin-top: 10px;
     padding-top: 10px;
     border-top: 1px solid rgba(255,255,255,0.18);
-    font-size: 0.36em;
+    font-size: 0.4em;
     line-height: 1.5;
     color: #b8c2e0;
   }}
@@ -303,7 +360,7 @@ def density_class(bullets, has_code=False) -> str:
     """Pick a font-size class so long/many bullets still fit on one slide."""
     total_chars = sum(len(b) for b in bullets)
     budget = total_chars * (1.6 if has_code else 1.0)
-    if budget > 260 or len(bullets) >= 7:
+    if budget > 220 or len(bullets) >= 6:
         return "dense"
     if budget < 120 and len(bullets) <= 4:
         return "sparse"
@@ -316,6 +373,16 @@ def bullets_ul(bullets, extra_class="", style=""):
     style_attr = f' style="{style}"' if style else ""
     items = "\n".join(f"        <li>{esc(b)}</li>" for b in bullets)
     return f"      <ul{class_attr}{style_attr}>\n{items}\n      </ul>"
+
+
+def flow_diagram_html(steps):
+    parts = []
+    for i, step in enumerate(steps):
+        parts.append(f'<div class="flow-step">{esc(step)}</div>')
+        if i < len(steps) - 1:
+            parts.append('<div class="flow-arrow">→</div>')
+    items = "\n".join(f"        {p}" for p in parts)
+    return f"      <div class=\"flow\">\n{items}\n      </div>"
 
 
 def terms_footer_html(terms):
@@ -340,7 +407,10 @@ def build_html(data: dict, out_path: Path):
         notes = sec.get("notes", "")
         notes_html = f"\n      <aside class=\"notes\">{esc(notes)}</aside>" if notes else ""
         code = sec.get("code")
-        if code:
+        diagram = sec.get("diagram")
+        if diagram:
+            body = flow_diagram_html(diagram) + "\n" + bullets_ul(sec["bullets"])
+        elif code:
             ul = bullets_ul(sec["bullets"], style="flex:1.3")
             body = f"""      <div style="display:flex; gap:2em; align-items:flex-start;">
 {ul}
