@@ -67,8 +67,8 @@ class PTAgentApp:
         self.root = root
         self.repo_root = load_repo_root()
         root.title("PT Agent — 발표자료 생성")
-        root.geometry("640x620")
-        root.minsize(560, 520)
+        root.geometry("640x680")
+        root.minsize(560, 560)
 
         pad = {"padx": 12, "pady": 6}
 
@@ -81,6 +81,19 @@ class PTAgentApp:
         self.subtitle_entry = ttk.Entry(root, font=("Segoe UI", 10))
         self.subtitle_entry.pack(fill="x", **pad)
         self.subtitle_entry.insert(0, "w/ Claude Code")
+
+        ttk.Label(
+            root,
+            text="발표 대상 (누구에게 발표하나요? 수준에 맞춰 내용을 조절합니다)",
+            font=("Segoe UI", 11, "bold"),
+        ).pack(anchor="w", **pad)
+        self.audience_combo = ttk.Combobox(
+            root,
+            font=("Segoe UI", 10),
+            values=["초등학생", "중학생", "고등학생", "대학생/일반인", "실무자/전문가"],
+        )
+        self.audience_combo.pack(fill="x", **pad)
+        self.audience_combo.set("중학생")
 
         ttk.Label(
             root,
@@ -124,10 +137,14 @@ class PTAgentApp:
     def submit(self):
         topic = self.topic_entry.get().strip()
         subtitle = self.subtitle_entry.get().strip()
+        audience = self.audience_combo.get().strip()
         items = [line.strip() for line in self.items_box.get("1.0", "end").splitlines() if line.strip()]
 
         if not topic:
             messagebox.showwarning("입력 필요", "발표 주제를 입력해주세요.")
+            return
+        if not audience:
+            messagebox.showwarning("입력 필요", "발표 대상을 입력해주세요. (예: 중학생, 실무자 등)")
             return
         if not items:
             messagebox.showwarning("입력 필요", "발표 항목을 한 줄에 하나씩 입력해주세요.")
@@ -148,14 +165,15 @@ class PTAgentApp:
             "slug": slug,
             "topic": topic,
             "subtitle": subtitle,
-            "sections": [{"title": item, "bullets": [], "notes": ""} for item in items],
-            "closing": {"title": "정리", "bullets": []},
+            "audience": audience,
+            "sections": [{"title": item, "bullets": [], "terms": [], "notes": ""} for item in items],
+            "closing": {"title": "정리", "bullets": [], "terms": []},
         }
         content_path = content_dir / f"{slug}.json"
         content_path.write_text(json.dumps(skeleton, ensure_ascii=False, indent=2), encoding="utf-8")
 
         request_path = content_dir / f"{slug}.request.txt"
-        request_path.write_text(self.build_request_text(slug, topic, subtitle, items), encoding="utf-8")
+        request_path.write_text(self.build_request_text(slug, topic, subtitle, audience, items), encoding="utf-8")
 
         self.launch_claude(slug)
 
@@ -165,7 +183,7 @@ class PTAgentApp:
             "터미널 창에서 대화를 이어가면 항목 추천, 리서치, PPT/웹 슬라이드 생성까지 진행됩니다.",
         )
 
-    def build_request_text(self, slug, topic, subtitle, items):
+    def build_request_text(self, slug, topic, subtitle, audience, items):
         item_lines = "\n".join(f"{i+1}. {it}" for i, it in enumerate(items))
         suggest_block = (
             "\n먼저 이 항목 구성에 빠진 게 없는지, 순서나 표현을 다듬을 부분이 없는지 검토해서 "
@@ -177,6 +195,7 @@ class PTAgentApp:
 
 주제: {topic}
 부제: {subtitle}
+발표 대상: {audience}
 
 입력된 발표 항목:
 {item_lines}
@@ -185,10 +204,20 @@ class PTAgentApp:
 sections[].bullets (항목별 핵심 내용 4~7개)와 closing.bullets 를 채워줘.
 필요하면 sections[].code 필드에 짧은 예시 코드/설정을 추가해도 좋아.
 
+**아주 중요 — 대상 맞춤:**
+모든 문장의 단어 선택과 설명 수준을 "{audience}"에 맞춰줘.
+예를 들어 대상이 초/중/고 학생이면 전문 용어를 최소화하고 쉬운 말과 비유로 풀어서 설명하고,
+실무자/전문가면 전문 용어를 그대로 쓰고 더 깊이 있는 내용을 다뤄줘.
+
+**용어 설명 (필수):**
+전문 용어나 어려운 단어를 한 개라도 쓴 슬라이드에는 sections[].terms 배열에
+{{"term": "용어", "def": "쉬운 설명"}} 형태로 추가해줘. terms 안의 설명도 "{audience}" 눈높이로 써줘.
+용어가 없는 슬라이드는 terms를 빈 배열로 둬도 돼.
+
 내용을 다 채운 뒤에는 아래 명령으로 PPT와 웹 슬라이드를 빌드해줘:
     python generator/build_deck.py generator/content/{slug}.json
 
-빌드 후 docs/{slug}/index.html 을 열어 슬라이드가 한 화면에 잘 들어가는지 확인해줘.
+빌드 후 docs/{slug}/index.html 을 열어 슬라이드가 한 화면에 잘 들어가는지, 용어 설명이 각 슬라이드 아래쪽에 잘 보이는지 확인해줘.
 """
 
     def launch_claude(self, slug: str):

@@ -44,7 +44,7 @@ def set_background(slide, color: RGBColor):
     bg.fill.fore_color.rgb = color
 
 
-def add_title_slide(prs: Presentation, topic: str, subtitle: str):
+def add_title_slide(prs: Presentation, topic: str, subtitle: str, audience: str = ""):
     slide = prs.slides.add_slide(prs.slide_layouts[6])
     set_background(slide, NAVY)
 
@@ -64,6 +64,13 @@ def add_title_slide(prs: Presentation, topic: str, subtitle: str):
     p2.font.size = Pt(22)
     p2.font.color.rgb = ACCENT
 
+    if audience:
+        box3 = slide.shapes.add_textbox(Inches(0.8), Inches(4.9), Inches(11.7), Inches(0.6))
+        p3 = box3.text_frame.paragraphs[0]
+        p3.text = f"대상: {audience}"
+        p3.font.size = Pt(16)
+        p3.font.color.rgb = RGBColor(0xCC, 0xD6, 0xF6)
+
     rule = slide.shapes.add_shape(1, Inches(0.85), Inches(2.15), Inches(1.4), Pt(4))
     rule.fill.solid()
     rule.fill.fore_color.rgb = ACCENT
@@ -71,7 +78,44 @@ def add_title_slide(prs: Presentation, topic: str, subtitle: str):
     return slide
 
 
-def add_content_slide(prs: Presentation, index: int, total: int, title: str, bullets, code: str = None):
+def add_terms_footer(slide, terms):
+    if not terms:
+        return
+    line = slide.shapes.add_shape(1, Inches(0.7), Inches(6.55), Inches(11.9), Pt(1.2))
+    line.fill.solid()
+    line.fill.fore_color.rgb = RGBColor(0xD8, 0xDC, 0xE6)
+    line.line.fill.background()
+
+    box = slide.shapes.add_textbox(Inches(0.7), Inches(6.65), Inches(11.9), Inches(0.75))
+    tf = box.text_frame
+    tf.word_wrap = True
+    p = tf.paragraphs[0]
+
+    label = p.add_run()
+    label.text = "용어 설명   "
+    label.font.size = Pt(11)
+    label.font.bold = True
+    label.font.color.rgb = ACCENT
+
+    for i, term in enumerate(terms):
+        sep = p.add_run()
+        sep.text = "" if i == 0 else "     ·     "
+        sep.font.size = Pt(11)
+        sep.font.color.rgb = SLATE
+
+        name = p.add_run()
+        name.text = f"{term['term']} "
+        name.font.size = Pt(11)
+        name.font.bold = True
+        name.font.color.rgb = NAVY
+
+        definition = p.add_run()
+        definition.text = term["def"]
+        definition.font.size = Pt(11)
+        definition.font.color.rgb = SLATE
+
+
+def add_content_slide(prs: Presentation, index: int, total: int, title: str, bullets, code: str = None, terms=None):
     slide = prs.slides.add_slide(prs.slide_layouts[6])
     set_background(slide, WHITE)
 
@@ -91,7 +135,7 @@ def add_content_slide(prs: Presentation, index: int, total: int, title: str, bul
     p.font.color.rgb = NAVY
 
     body_top = Inches(1.55)
-    body_height = Inches(5.2)
+    body_height = Inches(4.9) if terms else Inches(5.9)
     if code:
         body_width = Inches(7.0)
     else:
@@ -122,6 +166,8 @@ def add_content_slide(prs: Presentation, index: int, total: int, title: str, bul
             p.font.name = "Consolas"
             p.font.color.rgb = RGBColor(0x9C, 0xD8, 0xFF)
 
+    add_terms_footer(slide, terms)
+
     # page number
     pn = slide.shapes.add_textbox(Inches(12.5), Inches(7.05), Inches(0.6), Inches(0.35))
     p = pn.text_frame.paragraphs[0]
@@ -136,16 +182,16 @@ def build_pptx(data: dict, out_path: Path):
     prs.slide_width = Inches(13.333)
     prs.slide_height = Inches(7.5)
 
-    add_title_slide(prs, data["topic"], data.get("subtitle", ""))
+    add_title_slide(prs, data["topic"], data.get("subtitle", ""), data.get("audience", ""))
 
     sections = data["sections"]
     total = len(sections) + 2  # title + closing
     for i, sec in enumerate(sections, start=2):
-        add_content_slide(prs, i, total, sec["title"], sec["bullets"], sec.get("code"))
+        add_content_slide(prs, i, total, sec["title"], sec["bullets"], sec.get("code"), sec.get("terms"))
 
     closing = data.get("closing")
     if closing:
-        add_content_slide(prs, total, total, closing["title"], closing["bullets"])
+        add_content_slide(prs, total, total, closing["title"], closing["bullets"], terms=closing.get("terms"))
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     prs.save(out_path)
@@ -180,18 +226,32 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     padding-top: 64px;
     box-sizing: border-box;
     height: 100%;
-    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
   }}
-  .reveal .slides section > h2 {{ margin-top: 0; margin-bottom: 0.5em; }}
+  .reveal .slides section > h2 {{ margin-top: 0; margin-bottom: 0.5em; flex: 0 0 auto; }}
+  .reveal .slide-body {{ flex: 1 1 auto; min-height: 0; overflow-y: auto; }}
   .reveal ul {{ display: block; font-size: 0.68em; line-height: 1.35; margin: 0; padding-left: 0.9em; }}
   .reveal ul.dense {{ font-size: 0.58em; line-height: 1.28; }}
   .reveal ul.sparse {{ font-size: 0.8em; line-height: 1.45; }}
   .reveal li {{ margin-bottom: 0.5em; }}
   .reveal section pre {{ font-size: 0.42em; width: 100%; box-shadow: none; }}
   .reveal section aside.notes {{ display: none; }}
-  .reveal .title-slide {{ text-align: center; padding-top: 0; }}
+  .reveal .term-footer {{
+    flex: 0 0 auto;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255,255,255,0.18);
+    font-size: 0.36em;
+    line-height: 1.5;
+    color: #b8c2e0;
+  }}
+  .reveal .term-footer b {{ color: #e8ecf7; }}
+  .reveal .term-footer .term-label {{ color: var(--accent); font-weight: bold; margin-right: 8px; }}
+  .reveal .title-slide {{ text-align: center; padding-top: 0; justify-content: center; }}
   .reveal .title-slide h1 {{ font-size: 1.5em; }}
   .reveal .title-slide h3 {{ color: #ccd6f6; font-weight: 400; font-size: 0.9em; }}
+  .reveal .title-slide .audience-tag {{ color: #9aa4c2; font-size: 0.55em; margin-top: 1em; }}
   .topbar {{
     position: fixed; top: 0; left: 0; right: 0; padding: 10px 20px;
     display: flex; justify-content: flex-end; gap: 10px; z-index: 100;
@@ -258,12 +318,22 @@ def bullets_ul(bullets, extra_class="", style=""):
     return f"      <ul{class_attr}{style_attr}>\n{items}\n      </ul>"
 
 
+def terms_footer_html(terms):
+    if not terms:
+        return ""
+    parts = [f'<b>{esc(t["term"])}</b> {esc(t["def"])}' for t in terms]
+    body = "&nbsp;&nbsp;·&nbsp;&nbsp;".join(parts)
+    return f'\n      <div class="term-footer"><span class="term-label">용어 설명</span>{body}</div>'
+
+
 def build_html(data: dict, out_path: Path):
     slides_html = []
 
+    audience = data.get("audience", "")
+    audience_html = f'\n      <p class="audience-tag">대상: {esc(audience)}</p>' if audience else ""
     slides_html.append(f"""    <section class="title-slide">
       <h1>{esc(data['topic'])}</h1>
-      <h3>{esc(data.get('subtitle', ''))}</h3>
+      <h3>{esc(data.get('subtitle', ''))}</h3>{audience_html}
     </section>""")
 
     for sec in data["sections"]:
@@ -278,17 +348,23 @@ def build_html(data: dict, out_path: Path):
       </div>"""
         else:
             body = bullets_ul(sec["bullets"])
+        footer = terms_footer_html(sec.get("terms"))
         slides_html.append(f"""    <section>
       <h2>{esc(sec['title'])}</h2>
-{body}{notes_html}
+      <div class="slide-body">
+{body}
+      </div>{footer}{notes_html}
     </section>""")
 
     closing = data.get("closing")
     if closing:
         body = bullets_ul(closing["bullets"])
+        footer = terms_footer_html(closing.get("terms"))
         slides_html.append(f"""    <section>
       <h2>{esc(closing['title'])}</h2>
+      <div class="slide-body">
 {body}
+      </div>{footer}
     </section>""")
 
     html_out = HTML_TEMPLATE.format(
@@ -337,7 +413,7 @@ GALLERY_TEMPLATE = """<!DOCTYPE html>
 
 CARD_TEMPLATE = """  <div class="card">
     <h2>{topic}</h2>
-    <p>{subtitle}</p>
+    <p>{subtitle}{audience}</p>
     <a class="view" href="{slug}/">웹으로 보기</a>
     <a class="dl" href="{slug}/slides.pptx" download>PPT 다운로드</a>
   </div>"""
@@ -345,7 +421,12 @@ CARD_TEMPLATE = """  <div class="card">
 
 def update_gallery(entries):
     cards = "\n".join(
-        CARD_TEMPLATE.format(topic=esc(e["topic"]), subtitle=esc(e.get("subtitle", "")), slug=e["slug"])
+        CARD_TEMPLATE.format(
+            topic=esc(e["topic"]),
+            subtitle=esc(e.get("subtitle", "")),
+            audience=f' · 대상: {esc(e["audience"])}' if e.get("audience") else "",
+            slug=e["slug"],
+        )
         for e in entries
     )
     out = GALLERY_TEMPLATE.format(cards=cards)
@@ -357,7 +438,14 @@ def discover_existing_entries():
     content_dir = Path(__file__).resolve().parent / "content"
     for p in sorted(content_dir.glob("*.json")):
         d = load_content(p)
-        entries.append({"slug": d["slug"], "topic": d["topic"], "subtitle": d.get("subtitle", "")})
+        entries.append(
+            {
+                "slug": d["slug"],
+                "topic": d["topic"],
+                "subtitle": d.get("subtitle", ""),
+                "audience": d.get("audience", ""),
+            }
+        )
     return entries
 
 
