@@ -167,13 +167,31 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 <link rel="stylesheet" href="{cdn}/theme/night.css" id="theme">
 <link rel="stylesheet" href="{cdn}/plugin/highlight/monokai.css">
 <style>
-  :root {{ --accent: #4f8cff; }}
+  :root {{
+    --accent: #4f8cff;
+    --r-main-font-size: 30px;
+    --r-heading1-size: 2em;
+    --r-heading2-size: 1.35em;
+    --r-block-margin: 14px;
+  }}
   .reveal h1, .reveal h2 {{ color: var(--accent); }}
-  .reveal .slides section {{ text-align: left; }}
-  .reveal ul {{ display: block; }}
-  .reveal .title-slide {{ text-align: center; }}
-  .reveal .title-slide h1 {{ font-size: 2.2em; }}
-  .reveal .title-slide h3 {{ color: #ccd6f6; font-weight: 400; }}
+  .reveal .slides section {{
+    text-align: left;
+    padding-top: 64px;
+    box-sizing: border-box;
+    height: 100%;
+    overflow-y: auto;
+  }}
+  .reveal .slides section > h2 {{ margin-top: 0; margin-bottom: 0.5em; }}
+  .reveal ul {{ display: block; font-size: 0.68em; line-height: 1.35; margin: 0; padding-left: 0.9em; }}
+  .reveal ul.dense {{ font-size: 0.58em; line-height: 1.28; }}
+  .reveal ul.sparse {{ font-size: 0.8em; line-height: 1.45; }}
+  .reveal li {{ margin-bottom: 0.5em; }}
+  .reveal section pre {{ font-size: 0.42em; width: 100%; box-shadow: none; }}
+  .reveal section aside.notes {{ display: none; }}
+  .reveal .title-slide {{ text-align: center; padding-top: 0; }}
+  .reveal .title-slide h1 {{ font-size: 1.5em; }}
+  .reveal .title-slide h3 {{ color: #ccd6f6; font-weight: 400; font-size: 0.9em; }}
   .topbar {{
     position: fixed; top: 0; left: 0; right: 0; padding: 10px 20px;
     display: flex; justify-content: flex-end; gap: 10px; z-index: 100;
@@ -200,6 +218,12 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 <script src="{cdn}/plugin/highlight/highlight.js"></script>
 <script>
   Reveal.initialize({{
+    width: 1280,
+    height: 720,
+    margin: 0.04,
+    minScale: 0.2,
+    maxScale: 1.5,
+    center: false,
     hash: true,
     slideNumber: true,
     transition: 'slide',
@@ -215,6 +239,25 @@ def esc(s: str) -> str:
     return html.escape(s, quote=False)
 
 
+def density_class(bullets, has_code=False) -> str:
+    """Pick a font-size class so long/many bullets still fit on one slide."""
+    total_chars = sum(len(b) for b in bullets)
+    budget = total_chars * (1.6 if has_code else 1.0)
+    if budget > 260 or len(bullets) >= 7:
+        return "dense"
+    if budget < 120 and len(bullets) <= 4:
+        return "sparse"
+    return ""
+
+
+def bullets_ul(bullets, extra_class="", style=""):
+    cls = " ".join(c for c in [density_class(bullets, bool(style)), extra_class] if c)
+    class_attr = f' class="{cls}"' if cls else ""
+    style_attr = f' style="{style}"' if style else ""
+    items = "\n".join(f"        <li>{esc(b)}</li>" for b in bullets)
+    return f"      <ul{class_attr}{style_attr}>\n{items}\n      </ul>"
+
+
 def build_html(data: dict, out_path: Path):
     slides_html = []
 
@@ -226,19 +269,15 @@ def build_html(data: dict, out_path: Path):
     for sec in data["sections"]:
         notes = sec.get("notes", "")
         notes_html = f"\n      <aside class=\"notes\">{esc(notes)}</aside>" if notes else ""
-        bullets_html = "\n".join(f"        <li>{esc(b)}</li>" for b in sec["bullets"])
         code = sec.get("code")
         if code:
+            ul = bullets_ul(sec["bullets"], style="flex:1.3")
             body = f"""      <div style="display:flex; gap:2em; align-items:flex-start;">
-        <ul style="flex:1.3">
-{bullets_html}
-        </ul>
+{ul}
         <pre style="flex:1"><code class="language-json">{esc(code)}</code></pre>
       </div>"""
         else:
-            body = f"""      <ul>
-{bullets_html}
-      </ul>"""
+            body = bullets_ul(sec["bullets"])
         slides_html.append(f"""    <section>
       <h2>{esc(sec['title'])}</h2>
 {body}{notes_html}
@@ -246,12 +285,10 @@ def build_html(data: dict, out_path: Path):
 
     closing = data.get("closing")
     if closing:
-        bullets_html = "\n".join(f"        <li>{esc(b)}</li>" for b in closing["bullets"])
+        body = bullets_ul(closing["bullets"])
         slides_html.append(f"""    <section>
       <h2>{esc(closing['title'])}</h2>
-      <ul>
-{bullets_html}
-      </ul>
+{body}
     </section>""")
 
     html_out = HTML_TEMPLATE.format(

@@ -5,7 +5,22 @@
 - 웹으로 보기: GitHub Pages (Reveal.js 슬라이드)
 - 다운로드: 각 슬라이드 페이지 상단의 "PPT 다운로드" 버튼 (.pptx)
 
-## 새 발표자료 만드는 방법
+## 바탕화면 앱으로 만들기 (가장 쉬운 방법)
+
+바탕화면의 **PT Agent** 아이콘을 더블클릭하면 입력창이 열립니다.
+
+1. 발표 주제, 부제, 발표 항목(한 줄에 하나씩)을 입력
+2. "Claude Code에게 항목 추가/변형 추천을 먼저 요청하기"를 체크하면, 입력한 항목 구성을 검토해서 추가/변경을 제안받을 수 있음
+3. "Claude Code로 만들기 시작" 클릭 → `generator/content/<slug>.json` 초안과 요청 파일이 저장되고, 새 터미널 창에서 Claude Code가 자동으로 열려 그 요청을 이어받음
+4. 열린 터미널에서 Claude Code와 대화하며 항목 추천 확인 → 리서치 → PPT/웹 슬라이드 생성까지 진행
+
+exe는 `dist/PT-Agent.exe`에 있으며, `generator/gui.py`를 수정한 뒤에는 아래 명령으로 다시 빌드하면 바탕화면 바로가기가 그대로 최신 버전을 가리킵니다.
+
+```bash
+python -m PyInstaller --onefile --windowed --name "PT-Agent" --distpath dist --workpath build --specpath build generator/gui.py
+```
+
+## 새 발표자료 직접 만드는 방법 (수동)
 
 1. `generator/content/` 폴더에 새 JSON 파일을 만듭니다. (`01-visual-studio-agent.json` 참고)
    - `slug`: 폴더/URL에 쓰일 영문 식별자 (예: `02-my-topic`)
