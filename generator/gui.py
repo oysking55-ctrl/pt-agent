@@ -21,10 +21,8 @@ import json
 import re
 import subprocess
 import sys
-import tempfile
 import tkinter as tk
 import webbrowser
-from datetime import datetime
 from pathlib import Path
 from tkinter import messagebox, scrolledtext, ttk
 
@@ -414,17 +412,14 @@ sections[].bullets (항목별 핵심 내용 4~7개)와 closing.bullets 를 채�
     def launch_claude(self, request_path: Path):
         rel = request_path.relative_to(self.repo_root)
         prompt = f"{rel.as_posix()} 파일을 읽고, 그 안의 요청대로 진행해줘."
-        bat_path = Path(tempfile.gettempdir()) / f"pt_agent_launch_{datetime.now():%H%M%S%f}.bat"
-        bat_path.write_text(
-            "@echo off\r\n"
-            "chcp 65001 > nul\r\n"
-            f'cd /d "{self.repo_root}"\r\n'
-            f'claude "{prompt}"\r\n',
-            encoding="utf-8",
-        )
+        # Pass the prompt as a real argv entry (not through a batch file) so
+        # Windows delivers the Korean text via CreateProcessW untouched —
+        # writing it into a .bat and letting cmd.exe re-parse the file from
+        # disk corrupts multi-byte characters before `chcp 65001` can help.
         subprocess.Popen(
-            ["cmd", "/c", "start", "PT Agent - Claude Code", str(bat_path)],
+            ["cmd", "/k", "claude", prompt],
             cwd=str(self.repo_root),
+            creationflags=subprocess.CREATE_NEW_CONSOLE,
         )
 
 
